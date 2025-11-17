@@ -1,17 +1,27 @@
+# Usar imagen base de PHP con Apache
 FROM php:8.2-apache
 
-# Instalar dependencias necesarias
+# Actualizar repositorios e instalar dependencias necesarias
 RUN apt-get update && apt-get install -y \
     libpq-dev \
+    unzip \
+    git \
     && docker-php-ext-install pdo pdo_pgsql \
-    && a2enmod rewrite \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar archivos del proyecto al contenedor
-COPY . /var/www/html/
+# Habilitar mod_rewrite de Apache
+RUN a2enmod rewrite
 
-# Ajustar permisos (opcional)
-RUN chown -R www-data:www-data /var/www/html
+# Copiar todos los archivos de la carpeta 'api' al DocumentRoot de Apache
+COPY api/ /var/www/html/
 
-# Puerto que expondrá Apache
+# Ajustar permisos para que Apache pueda leer y escribir si es necesario
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
+
+# Exponer puerto 80 para el contenedor
 EXPOSE 80
+
+# Comando por defecto para arrancar Apache en primer plano
+CMD ["apache2-foreground"]
