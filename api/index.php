@@ -7,7 +7,6 @@ header("Content-Type: application/json; charset=UTF-8");
 require_once 'modelo.php';
 
 $metodo = $_SERVER['REQUEST_METHOD'];
-$datos = json_decode(file_get_contents('php://input'), true);
 
 switch ($metodo) {
     case 'GET':
@@ -15,15 +14,17 @@ switch ($metodo) {
         break;
 
     case 'POST':
-        if (isset($datos['titulo'], $datos['descripcion'], $datos['fecha'])) {
-            crearTarea($datos['titulo'], $datos['descripcion'], $datos['fecha']);
+        $datos = json_decode(file_get_contents('php://input'), true);
+        if (isset($datos['titulo'], $datos['descripcion'])) {
+            crearTarea($datos['titulo'], $datos['descripcion']);
             echo json_encode(['mensaje' => 'Tarea creada']);
         } else {
-            echo json_encode(['mensaje' => 'Titulo, descripcion y fecha requeridos']);
+            echo json_encode(['mensaje' => 'Título y descripción requeridos']);
         }
         break;
 
     case 'PUT':
+        $datos = json_decode(file_get_contents('php://input'), true);
         if (isset($datos['id'], $datos['completada'])) {
             actualizarTarea($datos['id'], $datos['completada']);
             echo json_encode(['mensaje' => 'Tarea actualizada']);
@@ -33,6 +34,7 @@ switch ($metodo) {
         break;
 
     case 'DELETE':
+        $datos = json_decode(file_get_contents('php://input'), true);
         if (isset($datos['id'])) {
             borrarTarea($datos['id']);
             echo json_encode(['mensaje' => 'Tarea eliminada']);
@@ -50,4 +52,3 @@ switch ($metodo) {
         echo json_encode(['mensaje' => 'Método no permitido']);
         break;
 }
-?>
