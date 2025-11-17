@@ -1,14 +1,29 @@
 <?php
-session_start();
-header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: *");
+header("Access-Control-Allow-Methods: *");
+header("Content-Type: application/json");
 
-$datos = json_decode(file_get_contents('php://input'), true);
+require_once "db.php";
 
-if(isset($datos['usuario'])){
-    $_SESSION['usuario'] = $datos['usuario'];
-    echo json_encode(['mensaje' => 'Sesión iniciada', 'usuario' => $_SESSION['usuario']]);
+$data = json_decode(file_get_contents("php://input"), true);
+$usuario = $data["usuario"] ?? "";
+$password = $data["password"] ?? "";
+
+// Validar usuario en BD
+$sql = "SELECT * FROM usuarios WHERE usuario = '$usuario' AND password = '$password'";
+$res = mysqli_query($conexion, $sql);
+
+if (mysqli_num_rows($res) > 0) {
+    echo json_encode([
+        "status" => "ok",
+        "mensaje" => "Login exitoso",
+        "usuario" => $usuario
+    ]);
 } else {
-    http_response_code(400);
-    echo json_encode(['error' => 'Usuario requerido']);
+    echo json_encode([
+        "status" => "error",
+        "mensaje" => "Credenciales inválidas"
+    ]);
 }
 ?>
