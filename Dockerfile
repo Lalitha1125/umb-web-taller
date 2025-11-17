@@ -1,25 +1,18 @@
-# Dockerfile para backend PHP + Neon/Postgres en Render
-
-# 1️⃣ Usar la imagen oficial de PHP con Apache
+# Usar imagen oficial de PHP con Apache
 FROM php:8.2-apache
 
-# 2️⃣ Instalar extensiones necesarias para PostgreSQL
-RUN apt-get update && \
-    apt-get install -y libpq-dev && \
-    docker-php-ext-install pdo_pgsql
+# Habilitar módulos necesarios
+RUN a2enmod rewrite
+RUN docker-php-ext-install pdo pdo_pgsql
 
-# 3️⃣ Copiar la carpeta api/ al directorio web de Apache
+# Copiar los archivos de la API al directorio web
 COPY api/ /var/www/html/
 
-# 4️⃣ Habilitar mod_rewrite para URLs amigables (opcional pero recomendado)
-RUN a2enmod rewrite
+# Ajustar permisos
+RUN chown -R www-data:www-data /var/www/html
 
-# 5️⃣ Permisos (opcional)
-RUN chown -R www-data:www-data /var/www/html/ && \
-    chmod -R 755 /var/www/html/
+# Exponer el puerto 80
+EXPOSE 80
 
-# 6️⃣ Puerto expuesto (Render lo usa internamente)
-EXPOSE 10000
-
-# 7️⃣ Comando por defecto (ya viene con Apache)
+# Comando para iniciar Apache en primer plano
 CMD ["apache2-foreground"]
