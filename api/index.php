@@ -1,24 +1,34 @@
 <?php
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: *");
+header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once 'modelo.php';
+require_once 'modelo.php'; // Tu archivo de funciones a la base de datos
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 
+// CORS preflight
+if ($metodo === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 switch ($metodo) {
+
     case 'GET':
-        echo json_encode(obtenerTareas());
+        // Obtener todas las tareas
+        $tareas = obtenerTareas();
+        echo json_encode($tareas);
         break;
 
     case 'POST':
         $datos = json_decode(file_get_contents('php://input'), true);
         if (isset($datos['titulo'], $datos['descripcion'])) {
-            crearTarea($datos['titulo'], $datos['descripcion']);
-            echo json_encode(['mensaje' => 'Tarea creada']);
+            $nuevaTarea = crearTarea($datos['titulo'], $datos['descripcion']);
+            echo json_encode(['mensaje' => 'Tarea creada', 'tarea' => $nuevaTarea]);
         } else {
+            http_response_code(400);
             echo json_encode(['mensaje' => 'Título y descripción requeridos']);
         }
         break;
@@ -29,6 +39,7 @@ switch ($metodo) {
             actualizarTarea($datos['id'], $datos['completada']);
             echo json_encode(['mensaje' => 'Tarea actualizada']);
         } else {
+            http_response_code(400);
             echo json_encode(['mensaje' => 'ID y completada requeridos']);
         }
         break;
@@ -39,12 +50,9 @@ switch ($metodo) {
             borrarTarea($datos['id']);
             echo json_encode(['mensaje' => 'Tarea eliminada']);
         } else {
+            http_response_code(400);
             echo json_encode(['mensaje' => 'ID requerido']);
         }
-        break;
-
-    case 'OPTIONS':
-        http_response_code(200);
         break;
 
     default:
@@ -52,3 +60,5 @@ switch ($metodo) {
         echo json_encode(['mensaje' => 'Método no permitido']);
         break;
 }
+?>
+
