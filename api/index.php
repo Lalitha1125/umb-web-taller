@@ -8,7 +8,7 @@ header("Content-Type: application/json");
 $host = "ep-noisy-queen-a8kas79l-pooler.eastus2.azure.neon.tech";
 $dbname = "neondb";
 $user = "neondb_owner";
-$pass = "npg_y6Gv4nCUPLir";
+$pass = "npg_w6zdkliax2Sj";
 $sslmode = "require";
 
 try {
