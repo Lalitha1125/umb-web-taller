@@ -47,7 +47,7 @@ if ($method === "POST" && isset($input["action"]) && $input["action"] === "login
     $correo = $input["correo"] ?? "";
     $contrasena = $input["contrasena"] ?? "";
 
-    $stmt = $pdo->prepare("SELECT * FROM tabla_registro WHERE correo = ?");
+    $stmt = $pdo->prepare("SELECT * FROM usuarios_login WHERE correo = ?");
     $stmt->execute([$correo]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
