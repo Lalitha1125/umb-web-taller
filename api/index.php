@@ -1,37 +1,44 @@
 <?php
+// CORS
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Content-Type: application/json");
 
-// Conexion a Neon PostgreSQL
+// ================================
+// 🔹 CONEXIÓN A NEON
+// ================================
 $host = "ep-noisy-queen-a8kas79l-pooler.eastus2.azure.neon.tech";
 $dbname = "neondb";
 $user = "neondb_owner";
 $pass = "npg_w6zdkliax2Sj";
-$sslmode = "require";
 
 try {
-    $pdo = new PDO("pgsql:host=$host;dbname=$dbname;sslmode=$sslmode", $user, $pass);
+    $pdo = new PDO(
+        "pgsql:host=$host;port=5432;dbname=$dbname;sslmode=require",
+        $user,
+        $pass,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
 } catch (Exception $e) {
     echo json_encode(["error" => "Error de conexión: " . $e->getMessage()]);
     exit;
 }
 
 $method = $_SERVER["REQUEST_METHOD"];
-$input = json_decode(file_get_contents("php://input"), true);
+$input = json_decode(file_get_contents("php://input"), true) ?? [];
 
-// ------------------------------------------
-// 1. REGISTRO DE USUARIO
-// ------------------------------------------
-if ($method === "POST" && isset($input["action"]) && $input["action"] === "register") {
+// =======================================================
+// 🔹 1. REGISTRO DE USUARIO
+// =======================================================
+if ($method === "POST" && ($input["action"] ?? "") === "register") {
     $nombre = $input["nombre"] ?? "";
-    $correo = $input["correo"] ?? "";
-    $contrasena = password_hash($input["contrasena"] ?? "", PASSWORD_DEFAULT);
+    $email = $input["email"] ?? "";
+    $password = password_hash($input["password"] ?? "", PASSWORD_DEFAULT);
 
     try {
-        $stmt = $pdo->prepare("INSERT INTO tabla_registro (nombre, correo, contrasena) VALUES (?, ?, ?)");
-        $stmt->execute([$nombre, $correo, $contrasena]);
+        $stmt = $pdo->prepare("INSERT INTO usuarios_login (nombre, email, password) VALUES (?, ?, ?)");
+        $stmt->execute([$nombre, $email, $password]);
 
         echo json_encode(["status" => "ok", "message" => "Usuario registrado"]);
     } catch (Exception $e) {
@@ -40,18 +47,19 @@ if ($method === "POST" && isset($input["action"]) && $input["action"] === "regis
     exit;
 }
 
-// ------------------------------------------
-// 2. LOGIN DE USUARIO
-// ------------------------------------------
-if ($method === "POST" && isset($input["action"]) && $input["action"] === "login") {
-    $correo = $input["correo"] ?? "";
-    $contrasena = $input["contrasena"] ?? "";
+// =======================================================
+// 🔹 2. LOGIN DE USUARIO
+// =======================================================
+if ($method === "POST" && ($input["action"] ?? "") === "login") {
 
-    $stmt = $pdo->prepare("SELECT * FROM usuarios_login WHERE correo = ?");
-    $stmt->execute([$correo]);
+    $email = $input["email"] ?? "";
+    $password = $input["password"] ?? "";
+
+    $stmt = $pdo->prepare("SELECT * FROM usuarios_login WHERE email = ?");
+    $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && password_verify($contrasena, $user["contrasena"])) {
+    if ($user && password_verify($password, $user["password"])) {
         echo json_encode(["status" => "ok", "message" => "Login correcto"]);
     } else {
         echo json_encode(["status" => "error", "message" => "Credenciales incorrectas"]);
@@ -59,30 +67,30 @@ if ($method === "POST" && isset($input["action"]) && $input["action"] === "login
     exit;
 }
 
-// ------------------------------------------
-// 3. CRUD TAREAS
-// ------------------------------------------
+// =======================================================
+// 🔹 3. CRUD TAREAS
+// =======================================================
 switch ($method) {
 
-    // LEER TAREAS
     case "GET":
         $stmt = $pdo->query("SELECT * FROM tareas ORDER BY id ASC");
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         break;
 
-    // CREAR TAREA
     case "POST":
-        $titulo = $input["titulo"] ?? "";
-        $descripcion = $input["descripcion"] ?? "";
-        $fecha = $input["fecha"] ?? "";
+        // Evitar que choque con login/registro
+        if (isset($input["titulo"])) {
+            $titulo = $input["titulo"];
+            $descripcion = $input["descripcion"] ?? "";
+            $fecha = $input["fecha"] ?? "";
 
-        $stmt = $pdo->prepare("INSERT INTO tareas (titulo, descripcion, fecha, completada) VALUES (?, ?, ?, false)");
-        $stmt->execute([$titulo, $descripcion, $fecha]);
+            $stmt = $pdo->prepare("INSERT INTO tareas (titulo, descripcion, fecha, completada) VALUES (?, ?, ?, false)");
+            $stmt->execute([$titulo, $descripcion, $fecha]);
 
-        echo json_encode(["status" => "ok"]);
+            echo json_encode(["status" => "ok"]);
+        }
         break;
 
-    // ACTUALIZAR TAREA
     case "PUT":
         $id = $input["id"] ?? 0;
         $completada = $input["completada"] ?? false;
@@ -93,7 +101,6 @@ switch ($method) {
         echo json_encode(["status" => "ok"]);
         break;
 
-    // ELIMINAR TAREA
     case "DELETE":
         $id = $input["id"] ?? 0;
 
